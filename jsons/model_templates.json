@@ -1,0 +1,101 @@
+{
+    "LLAMA3_70B": {
+        "model_name_or_path": "meta-llama/Llama-3.3-70B-Instruct",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "template": "llama3"
+    },
+    "LLAMA3_70B_": {
+        "model_name_or_path": "meta-llama/Llama-3.1-70B-Instruct",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template": "llama3"
+    },
+    "LLAMA3_8B": {
+        "model_name_or_path": "meta-llama/Llama-3.1-8B-Instruct",
+        "quantization_bit": 4,
+        "max_length": 1000,
+        "flash_attn": "fa2",
+        "template": "llama3"
+    },
+    "LLAMA2_7B": {
+        "model_name_or_path": "meta-llama/Llama-2-7b-chat-hf",
+        "flash_attn": "fa2",
+        "quantization_bit": 4,
+        "max_length": 1000,
+        "template": "llama2"
+    },
+    "LLAMA3_3B": {
+        "model_name_or_path": "meta-llama/Llama-3.2-3B-Instruct",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"llama3"
+    },
+    "LLAMA3_1B": {
+        "model_name_or_path": "meta-llama/Llama-3.2-1B-Instruct",
+        "quantization_bit": 4,
+        "flash_attn": "fa2", 
+        "max_length": 1000,
+        "template":"llama3"
+    },
+    "Mistral_7B":{
+        "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.1",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"mistral"
+    },
+    "Mistral_8x7B": {
+        "model_name_or_path": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"mistral"
+    },
+    "Cohere_8B": {
+        "model_name_or_path": "CohereForAI/aya-expanse-8b",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"cohere"
+    },
+    "Cohere_32B": {
+        "model_name_or_path": "CohereForAI/aya-expanse-32b",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"cohere"
+    },
+    "Nemotron_70B": {
+        "model_name_or_path": "nvidia/Llama-3.1-Nemotron-70B-Instruct-HF",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"llama3"
+    },
+    "Qwen_72B": {
+        "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"qwen"
+    },
+    "Qwen_7B": {
+        "model_name_or_path": "Qwen/Qwen2.5-7B-Instruct",
+        "quantization_bit": 4,
+        "temperature": 0.5,
+        "max_length": 1000,
+        "top_p": 0.9,
+        "flash_attn": "fa2",
+        "template":"qwen"
+    },
+    "Qwen_1.5B": {
+        "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct",
+        "quantization_bit": 4,
+        "flash_attn": "fa2",
+        "max_length": 1000,
+        "template":"qwen"
+    }
+}
