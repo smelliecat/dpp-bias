@@ -41,53 +41,126 @@ jsons/model_templates.json  checkpoint, quantization and chat template for each 
 jsons/gen_configs.json      decoding settings for each model and task
 jsons/tasks200.json         evaluation sets: 5 demonstrations and 200 questions per task
 jsons/news_sets.sha256.json fingerprints of the AG News, CNN/DailyMail and XSum sets (see "Data")
-scripts/run_placement_study.sh   the full sweep
+scripts/run_placement_study.sh   runs the study (smoke test, chosen models, or the full sweep)
+scripts/check_setup.py           checks packages, GPU, disk and Hugging Face access before a run
 scripts/rebuild_news_sets.py     rebuilds the three news sets from the public datasets
 ```
+
+## What you need
+
+- **An NVIDIA GPU with CUDA.** Every model is loaded in 4-bit with bitsandbytes, which needs a
+  CUDA GPU; CPU-only and Apple-silicon machines are not supported by this setup. No cluster or
+  job scheduler is needed: everything runs on one machine.
+- **Python 3.10 to 3.12** (3.12 is what we use) and a PyTorch build that matches your CUDA driver.
+- **Disk space** in the Hugging Face cache for each checkpoint you run (full-precision weights
+  are downloaded and quantized when loaded). Set `HF_HOME` to put the cache on a bigger disk.
+- **A Hugging Face account** for the gated checkpoints (Llama, Mistral, Aya). The Qwen models
+  are not gated, so the smoke test below works without a login.
+
+Rough GPU memory and download size per model, as configured (4-bit). Treat these as guides:
+
+| Model keys | GPU memory | Download |
+|---|---|---|
+| `Qwen_1.5B` | ~4 GB | ~4 GB |
+| `LLAMA3_3B` | ~6 GB | ~7 GB |
+| `Qwen_7B`, `Mistral_7B`, `LLAMA3_8B`, `Cohere_8B` | ~10 GB | 15 to 17 GB each |
+| `Cohere_32B` | ~26 GB | ~65 GB |
+| `Mistral_8x7B` | ~32 GB | ~95 GB |
+| `LLAMA3_70B`, `Qwen_72B` | ~48 to 50 GB (one 80 GB GPU, or two 48 GB GPUs) | ~145 GB each |
+
+A 24 GB card (for example an RTX 3090/4090 or A10) runs everything up to the 8B models. The
+full sweep is 6,400 generations per model (8 tasks x 4 positions x 200 questions), run one at a
+time, so the large models take many hours each.
 
 ## Setup
 
 ```bash
 git clone https://github.com/smelliecat/dpp-bias.git
 cd dpp-bias
-conda create -n dpp-bias python=3.12 -y && conda activate dpp-bias
-# Install the PyTorch build for your CUDA version first: https://pytorch.org/get-started/locally/
+conda create -n dpp-bias python=3.12 -y && conda activate dpp-bias   # or: python -m venv .venv && source .venv/bin/activate
+
+# 1. PyTorch for your CUDA version, from https://pytorch.org/get-started/locally/ , e.g.
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# 2. Everything else
 pip install -r requirements.txt
-pip install flash-attn --no-build-isolation   # optional; the model templates ask for FlashAttention-2
+
+# 3. Optional: FlashAttention-2 is faster, but it often has to compile. Without it the model
+#    loader prints a warning and falls back to the default attention (outputs can differ very slightly).
+pip install flash-attn --no-build-isolation
 ```
 
-Some checkpoints are gated on the Hugging Face Hub. Accept their terms on the model pages, then
-run `huggingface-cli login` or export `HF_TOKEN` in your shell.
+### Hugging Face login (gated models only)
 
-`runner.py` imports the bundled library as `src.llamafactory`, so run it from the repository root
-with the root on `PYTHONPATH` (the sweep script does this for you).
+1. Sign in on huggingface.co and open each gated model page you want to run, for example
+   [meta-llama/Llama-3.1-8B-Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct),
+   [mistralai/Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1) and
+   [CohereForAI/aya-expanse-8b](https://huggingface.co/CohereForAI/aya-expanse-8b).
+   Accept the terms. Meta's approval can take a while.
+2. Create a read token at <https://huggingface.co/settings/tokens>.
+3. Run `huggingface-cli login` (or `hf auth login`) and paste it, or `export HF_TOKEN=...` in
+   your shell. Do not put the token in any file in this repository.
 
-## Quick check
+### Check your setup
 
-One small model, one task, five questions, all four positions:
+```bash
+python scripts/check_setup.py                                  # for the smoke test
+python scripts/check_setup.py --models Qwen_7B LLAMA3_8B --tasks mnli arc
+```
+
+This checks the configs and task file, the Python packages, that PyTorch can see a GPU (and
+whether it is big enough), free disk space for the downloads, and that your Hugging Face login
+can reach each checkpoint, before anything large is downloaded. It prints what to fix for each
+problem. The run script runs it for you first.
+
+## Smoke test
+
+One small, ungated model, one task, five questions, all four positions. After the ~4 GB
+download it takes a few minutes on any recent GPU:
+
+```bash
+bash scripts/run_placement_study.sh --smoke
+```
+
+Results go to `outputs/smoke_5_<date>/Qwen_1.5B/`. With only five questions the scores are noisy
+and not comparable to the paper; this run is only to see that everything works end to end.
+
+## Running the study
+
+```bash
+bash scripts/run_placement_study.sh Qwen_7B                 # one model, every paper task in the task file
+bash scripts/run_placement_study.sh --tasks "mnli arc" Qwen_7B LLAMA3_8B
+bash scripts/run_placement_study.sh --size 50 Qwen_7B       # fewer questions per task
+bash scripts/run_placement_study.sh --all                   # the ten models in the paper
+bash scripts/run_placement_study.sh --help                  # all options
+```
+
+The script works from any directory, checks your setup first (`--skip-check` to skip), writes
+to `outputs/results_<size>_<date>/` (`--output DIR` to change the root), keeps a `run.log` there,
+and stops with a message if anything is missing. `--dry-run` prints the exact `runner.py`
+command without running it. It needs no cluster; on a SLURM cluster you can still submit it as
+is with your own `sbatch` options.
+
+The shipped task file has five of the eight paper tasks. To add AG News, XSum and CNN/DailyMail,
+run this once (it downloads those datasets; see "Data"); the script then picks them up:
+
+```bash
+python scripts/rebuild_news_sets.py
+```
+
+To call the runner directly instead, run it from the repository root with the root on
+`PYTHONPATH` (`runner.py` imports the bundled library as `src.llamafactory`):
 
 ```bash
 export PYTHONPATH="$PWD:$PYTHONPATH"
-python src/runner.py \
-    --models Qwen_1.5B \
-    --tasks mnli \
-    --prompts samppm \
+python src/runner.py --models Qwen_1.5B --tasks mnli --prompts samppm \
     --prompt_structure icld_ssp icld_esp icld_sum icld_eum \
-    --prompt_file jsons/prompts.json \
-    --model_template_file jsons/model_templates.json \
-    --gen_config_file jsons/gen_configs.json \
-    --input_path jsons/tasks200.json \
-    --size 5 \
-    --output_path outputs/quick_check
+    --prompt_file jsons/prompts.json --model_template_file jsons/model_templates.json \
+    --gen_config_file jsons/gen_configs.json --input_path jsons/tasks200.json \
+    --size 5 --output_path outputs/quick_check
 ```
 
-## Running the sweep
-
-```bash
-python scripts/rebuild_news_sets.py         # once, to add AG News, XSum and CNN/DailyMail (see "Data")
-bash scripts/run_placement_study.sh         # ten models x eight tasks x four positions
-bash scripts/run_placement_study.sh Qwen_7B # or any subset of model keys
-```
+### Models and tasks
 
 Models (keys from `jsons/model_templates.json`):
 
@@ -145,6 +218,18 @@ python src/analysis.py --results_dir outputs/<run> --output_path outputs/<run>_a
 python src/plotter.py --results_dir outputs/<run>      # writes to ./result_plots/
 ```
 
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `torch.cuda.is_available()` is False, or bitsandbytes errors about CUDA | Install the CUDA build of PyTorch for your driver (check `nvidia-smi`), then reinstall bitsandbytes. A GPU is required. |
+| `ModuleNotFoundError: No module named 'src'` | Run from the repository root with it on `PYTHONPATH`, or use the run script, which does this. |
+| `401` / `GatedRepoError` / "Access to model ... is restricted" | Accept the model's terms on its Hub page, wait for approval, and log in (see "Hugging Face login"). |
+| CUDA out of memory | Pick a smaller model (see the table in "What you need"), or use a GPU with more memory. |
+| `NameError: generation_args` after adding your own model key | Add `<MODEL>_<task>` entries for it to `jsons/gen_configs.json`; `check_setup.py` lists the missing ones. |
+| Warning that FlashAttention-2 is not installed | Harmless; the default attention is used. |
+| `ag_news`, `xsum` or `cnn_dailymail` skipped | Run `python scripts/rebuild_news_sets.py` once. |
+
 ## Scope of this release
 
 The release covers prompt construction, generation, answer extraction and per-position scoring
@@ -154,15 +239,24 @@ prediction-change counts the answers that flip relative to the `sum` position. T
 runs and the scripts that turn the saved outputs into the paper's tables and figures are not
 included here.
 
-Other things to know:
+Known limitations of this release:
 
-- `runner.py` does not fix a random seed. With `--size 200` it uses every question in the task
-  file, so the only thing left to chance is the order in which questions are processed.
-- `--attention_analysis` and `--visualize_attention` call `ChatModel.chat_with_attentions`, which
-  upstream LLaMA Factory does not provide. They are not used in the sweep and will not run with
-  the bundled copy.
+- **Zero-shot baselines and paper tables/figures are not included.** The accuracy-change metric
+  needs a zero-shot run of each model and task, and there is no script for it here yet; nor are
+  the scripts that produce the paper's tables and figures. `src/analysis.py` and `src/plotter.py`
+  give exploratory summaries only.
+- **No fixed random seed.** `runner.py` does not seed its sampling. With `--size 200` it uses
+  every question in the task file, so only the processing order varies; with a smaller `--size`
+  each run draws a different random subset of questions.
+- **`--attention_analysis` and `--visualize_attention` do not work.** They call
+  `ChatModel.chat_with_attentions` (`src/runner.py`, in `process_questions`), which upstream LLaMA
+  Factory does not provide. They are not used in the study.
+- **`src/data_maker.py` does not reproduce the shipped sets.** It draws a new sample on every
+  call unless given `--seed`, and labels ARC and GSM8K with different task types from the
+  shipped file, which changes how the runner words those questions. Use `jsons/tasks200.json`
+  (plus the rebuilt news sets) to match the paper.
 - `--ablation` reruns each task with one demonstration removed at a time; `--randomize_demos`
-  shuffles the order of the demonstrations.
+  shuffles the order of the demonstrations. Neither is part of the main study.
 
 ## Data
 
@@ -179,10 +273,8 @@ texts with those fingerprints, checks each rebuilt set against its recorded fing
 writes `jsons/tasks200_full.json` with all nine tasks. That file is git-ignored; please keep it
 out of commits.
 
-`src/data_maker.py` shows how sets like these are drawn. Without `--seed`, every call draws a
-different sample. Its builders currently label ARC and GSM8K with different task types from the
-shipped file, which changes how the runner words those questions, so use the shipped file to
-match the paper.
+`src/data_maker.py` shows how sets like these are drawn, but see "Known limitations" above
+before using it.
 
 ## Citation
 
