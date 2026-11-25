@@ -1,0 +1,21 @@
+dpp-bias
+Copyright 2025 Kwesi Adu Cobbina and Tianyi Zhou
+
+This repository contains the code for the paper "Where to show Demos in Your
+Prompt: A Positional Bias of In-Context Learning" (EMNLP 2025). It is licensed
+under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party software
+--------------------
+src/llamafactory/ is an unmodified copy of the `src/llamafactory` package of
+LLaMA Factory (https://github.com/hiyouga/LLaMA-Factory) at commit
+0583d0667648edebde89f6d034b1011e604901ec (25 March 2025). LLaMA Factory is
+licensed under the Apache License, Version 2.0; its license text is kept at
+src/llamafactory/LICENSE and each file keeps its original copyright header.
+
+Third-party data
+----------------
+jsons/tasks200.json contains small samples of public datasets (MMLU, SQuAD,
+SST-2, MultiNLI, ARC and GSM8K). The samples remain under the terms of their
+original datasets, which are listed in README.md. The Apache license above
+covers the code in this repository, not those samples.

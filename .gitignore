@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Secrets and local settings
+.env
+.env.*
+
+# Run outputs
+outputs*/
+results*/
+result_plots*/
+slurm_output/
+offload/
+*.log
+
+# Rebuilt task file with CNN/DailyMail and XSum article text (see README, "Data")
+jsons/tasks200_full.json
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

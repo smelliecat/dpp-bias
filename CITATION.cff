@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this code or the evaluation sets, please cite the paper below."
+title: "dpp-bias: code for 'Where to show Demos in Your Prompt: A Positional Bias of In-Context Learning'"
+type: software
+authors:
+  - family-names: Cobbina
+    given-names: Kwesi Adu
+  - family-names: Zhou
+    given-names: Tianyi
+license: Apache-2.0
+repository-code: "https://github.com/smelliecat/dpp-bias"
+preferred-citation:
+  type: conference-paper
+  title: "Where to show Demos in Your Prompt: A Positional Bias of In-Context Learning"
+  authors:
+    - family-names: Cobbina
+      given-names: Kwesi Adu
+    - family-names: Zhou
+      given-names: Tianyi
+  collection-title: "Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing"
+  collection-type: proceedings
+  conference:
+    name: "2025 Conference on Empirical Methods in Natural Language Processing"
+    city: Suzhou
+    country: CN
+  publisher:
+    name: "Association for Computational Linguistics"
+  year: 2025
+  month: 11
+  start: 29560
+  end: 29593
+  doi: "10.18653/v1/2025.emnlp-main.1503"
+  url: "https://aclanthology.org/2025.emnlp-main.1503/"
